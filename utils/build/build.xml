@@ -24,9 +24,14 @@
     </target>
 
     <target name="qa" description="Lance les outils d'analyse">
-        <phingcall target="premier-outil" />
-        <phingcall target="second-outil" />
-        <phingcall target="troisime-outil" />
+        <phingcall target="pdepend" />
+        <phingcall target="phpmd" />
+        <phingcall target="phpcpd" />
+        <phingcall target="phploc" />
+        <phingcall target="phpcs" />
+        <!--<phingcall target="phpdoc" />-->
+        <phingcall target="phpunit" />
+        <phingcall target="phpcb" />
     </target>
 
     <target name="premier-outil" description="...">
@@ -42,12 +47,45 @@
     </target>
 
     <target name="pdepend">
-        <phpdepend file="${project.basedir}/${source}/src/AppBundle/Controller">
+        <phpdepend file="${project.basedir}/${source}/src">
             <logger type="jdepend-xml" outfile="${project.basedir}/build/logs/jdepend.xml" />
             <logger type="jdepend-chart" outfile="${project.basedir}/build/pdepend/dependencies.svg" />
             <logger type="overview-pyramid" outfile="${project.basedir}/build/pdepend/overview-pyramid.svg" />
         </phpdepend>
     </target>
+    <!--remontée de statistiques susceptibles de mettre en évidence des portions de code-source de qualité médiocre-->
+    <target name="phpmd">
+        <phpmd file="${project.basedir}/${source}/src">
+            <formatter type="xml" outfile="${project.basedir}/build/phpmd.xml" />
+        </phpmd>
+    </target>
+    <!--pour la détection de portions de code copié-collé :-->
+    <target name="phpcpd">
+        <phpcpd file="${project.basedir}/${source}/src">
+            <formatter type="pmd" outfile="${project.basedir}/build/logs/pmd-cpd.xml"/>
+        </phpcpd>
+    </target>
 
+    <!--Enchainons ensuite avec la collecte de statistiques du type nombres de méthodes, nombres de classes, nombres de lignes de code, … avec l’outil phploc :-->
+    <target name="phploc">
+        <exec logoutput="true" dir="${project.basedir}" command="phploc --log-csv '${project.basedir}/build/logs/phploc.csv' '${project.basedir}/${source}/src'" escape="false" />
+    </target>
 
+    <!--Vérifions ensuite le respect des normes de codage, avec PHP_CodeSniffer :-->
+    <target name="phpcs">
+        <phpcodesniffer standard="Zend">
+            <fileset dir="${project.basedir}/${source}/scr">
+                <include name="**/*.php"/>
+            </fileset>
+            <formatter type="checkstyle" outfile="${project.basedir}/build/logs/checkstyle.xml"/>
+        </phpcodesniffer>
+    </target>
+
+    <target name="phpunit">
+        <exec logoutput="true" dir="${project.basedir}/${source}/tests" command="phpunit" escape="false" />
+    </target>
+
+    <target name="phpcb">
+        <exec logoutput="true" command="phpcb --log '${project.basedir}/build/logs' --source '${project.basedir}/${source}/src' --output '${project.basedir}/build/code-browser'" escape="false" />
+    </target>
 </project>
