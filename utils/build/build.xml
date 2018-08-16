@@ -1,101 +1,155 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project name="job-test" default="ci" basedir="../../..">
-    <property name="source" value="srcs" />
+<?xml version="1.0" encoding="utf-8" ?>
+<project name="job-test" basedir="../../.." default="main">
 
-    <target name="ci"
-            description="Tâche principale d'intégration continue"
-            depends="clean,qa"
-    />
+    <property name="builddir" value="job-test/utils/build" />
+    <property name="source" value="job-test/src" />
+    <property name="testdir" value="job-test/tests" />
 
-    <target name="clean" description="Vide les répertoires d'artefacts">
+    <fileset id="php-files" dir="${project.basedir}">
+        <include name="**/*.php"/>
+        <exclude name="library/Zend/**"/>
+        <exclude name="tests/**"/>
+    </fileset>
 
-        <delete dir="${project.basedir}/build/api" />
-        <delete dir="${project.basedir}/build/code-browser" />
-        <delete dir="${project.basedir}/build/coverage" />
-        <delete dir="${project.basedir}/build/logs" />
-        <delete dir="${project.basedir}/build/pdepend" />
+    <!-- ============================================  -->
+    <!-- (DEFAULT) Target: main                        -->
+    <!-- ============================================  -->
+    <target name="main" description="Start analyzing our application">
+        <echo msg="Start Build" />
 
-        <mkdir dir="${project.basedir}/build/api" />
-        <mkdir dir="${project.basedir}/build/code-browser" />
-        <mkdir dir="${project.basedir}/build/coverage" />
-        <mkdir dir="${project.basedir}/build/logs" />
-        <mkdir dir="${project.basedir}/build/pdepend" />
-
-    </target>
-
-    <target name="qa" description="Lance les outils d'analyse">
+        <phingcall target="prepare" />
+        <phingcall target="phpunit" />
         <phingcall target="pdepend" />
         <phingcall target="phpmd" />
         <phingcall target="phpcpd" />
-        <phingcall target="phploc" />
+        <phingcall target="phpdoc" />
+        <!--<phingcall target="docblox" />-->
         <phingcall target="phpcs" />
-        <!--<phingcall target="phpdoc" />-->
-        <phingcall target="phpunit" />
+        <phingcall target="phploc" />
         <phingcall target="phpcb" />
+
+        <echo msg="Finished Build" />
     </target>
 
-    <target name="premier-outil" description="...">
-        <!-- Ici, le gros du boulot pour le premier outil ;-) -->
+    <!-- ============================================  -->
+    <!-- (DEFAULT) Target: prepare                     -->
+    <!-- ============================================  -->
+    <target name="prepare" >
+        <echo msg="Making directory build" />
+
+        <delete dir="${builddir}/api" includeemptydirs="true" verbose="true" failonerror="true" />
+        <delete dir="${builddir}/code-browser" includeemptydirs="true" verbose="true" failonerror="true" />
+        <delete dir="${builddir}/coverage" includeemptydirs="true" verbose="true" failonerror="true" />
+        <delete dir="${builddir}/logs" includeemptydirs="true" verbose="true" failonerror="true" />
+        <delete dir="${builddir}/pdepend" includeemptydirs="true" verbose="true" failonerror="true" />
+
+        <mkdir dir="${builddir}/api"/>
+        <mkdir dir="${builddir}/api/docblox"/>
+        <mkdir dir="${builddir}/code-browser"/>
+        <mkdir dir="${builddir}/coverage"/>
+        <mkdir dir="${builddir}/logs"/>
+        <mkdir dir="${builddir}/pdepend"/>
     </target>
 
-    <target name="second-outil" description="...">
-        <!-- Ici, le gros du boulot pour le second outil ;-) -->
+    <!-- ============================================  -->
+    <!-- Target: Unit test                             -->
+    <!-- ============================================  -->
+    <target name="phpunit" description="Run unit tests using PHPUnit and generates junit.xml and clover.xml">
+        <echo msg="Beginning of the tests" />
+        <exec command="phpunit --bootstrap=${testdir}/bootstrap.php
+                             --configuration ${testdir}/phpunit.xml
+                             --log-junit ${builddir}/logs/junit.xml
+                             --coverage-clover ${builddir}/logs/clover.xml
+                             --coverage-html ${builddir}/coverage/
+                             ${testdir}"
+        />
     </target>
 
-    <target name="troisime-outil" description="...">
-        <!-- Et là, le gros du boulot pour le dernier ;-) -->
-    </target>
-
- <!--   <target name="pdepend">
-        <phpdepend file="${project.basedir}/logs/jdepend.xml">
-            <logger type="jdepend-xml" outfile="${project.basedir}/build/logs/jdepend.xml" />
-            <logger type="jdepend-chart" outfile="${project.basedir}/build/pdepend/dependencies.svg" />
-            <logger type="overview-pyramid" outfile="${project.basedir}/build/pdepend/overview-pyramid.svg" />
-        </phpdepend>
-    </target>-->
-
+    <!-- ============================================  -->
+    <!-- Target: PHP Depend                            -->
+    <!-- ============================================  -->
     <target name="pdepend" description="Calculate dependencies of the code base">
-        <exec command="pdepend --jdepend-xml=${project.basedir}/build/logs/jdepend.xml
-                               --jdepend-chart=${project.basedir}/build/pdepend/dependencies.svg
-                               --overview-pyramid=${project.basedir}/build/pdepend/overview-pyramid.svg
+        <exec command="pdepend --jdepend-xml=${builddir}/logs/jdepend.xml
+                               --jdepend-chart=${builddir}/pdepend/dependencies.svg
+                               --overview-pyramid=${builddir}/pdepend/overview-pyramid.svg
                                --suffix=php
                                --ignore=library/Zend,tests
                                ${source}"
               escape="false" />
     </target>
-    <!--remontée de statistiques susceptibles de mettre en évidence des portions de code-source de qualité médiocre-->
-    <target name="phpmd">
-        <phpmd file="${project.basedir}/${source}/src">
-            <formatter type="xml" outfile="${project.basedir}/build/phpmd.xml" />
+
+    <!-- ============================================  -->
+    <!-- Target: PHPMD (Project Mess Detector)         -->
+    <!-- ============================================  -->
+    <target name="phpmd" description="Generate pmd.xml using PHPMD">
+        <phpmd>
+            <fileset refid="php-files"/>
+            <formatter type="xml" outfile="${builddir}/logs/pmd.xml"/>
         </phpmd>
     </target>
-    <!--pour la détection de portions de code copié-collé :-->
-    <target name="phpcpd">
-        <phpcpd file="${project.basedir}/${source}/src">
-            <formatter type="pmd" outfile="${project.basedir}/build/logs/pmd-cpd.xml"/>
+
+    <!-- ============================================  -->
+    <!-- Target: PHPCPD (Copy/Paste Detector)          -->
+    <!-- ============================================  -->
+    <target name="phpcpd" description="Copy/Paste Detection">
+        <phpcpd>
+            <fileset refid="php-files"/>
+            <formatter type="pmd" outfile="${builddir}/logs/pmd-cpd.xml"/>
         </phpcpd>
     </target>
 
-    <!--Enchainons ensuite avec la collecte de statistiques du type nombres de méthodes, nombres de classes, nombres de lignes de code, … avec l’outil phploc :-->
-    <target name="phploc">
-        <exec logoutput="true" dir="${project.basedir}" command="phploc --log-csv '${project.basedir}/build/logs/phploc.csv' '${project.basedir}/${source}/src'" escape="false" />
+    <!-- ============================================  -->
+    <!-- Target: PHPCS (PHP Code Sniffer)              -->
+    <!-- ============================================  -->
+    <target name="phpcs" description="Coding Standards Analysis">
+        <exec command="phpcs --standard=MyZend
+                             --report=checkstyle
+                             --report-file=${builddir}/logs/checkstyle.xml
+                             --ignore=library/Zend,tests,docs,scripts
+                             --extensions=php
+                             ${source}"
+              escape="false" />
     </target>
 
-    <!--Vérifions ensuite le respect des normes de codage, avec PHP_CodeSniffer :-->
-    <target name="phpcs">
-        <phpcodesniffer standard="Zend">
-            <fileset dir="${project.basedir}/${source}/scr">
-                <include name="**/*.php"/>
-            </fileset>
-            <formatter type="checkstyle" outfile="${project.basedir}/build/logs/checkstyle.xml"/>
-        </phpcodesniffer>
+    <!-- ============================================  -->
+    <!-- Target: PHPDoc                                -->
+    <!-- ============================================  -->
+    <target name="phpdoc" description="Generate API documentation using PHPDocumentor">
+        <phpdoc title="${project.name} API Documentation"
+                destdir="${builddir}/api"
+                sourcecode="false"
+                output="HTML:Smarty:PHP"
+                quiet="true">
+            <fileset refid="php-files"/>
+        </phpdoc>
     </target>
 
-    <target name="phpunit">
-        <exec logoutput="true" dir="${project.basedir}/${source}/tests" command="phpunit" escape="false" />
+    <!-- ============================================  -->
+    <!-- Target: Docblox                               -->
+    <!-- ============================================  -->
+    <target name="docblox" description="Generate API documentation with DocBlox">
+        <docblox
+                title="${project.name} API Documentation"
+                destdir="${builddir}/api/docblox">
+            <fileset refid="php-files"/>
+        </docblox>
     </target>
 
-    <target name="phpcb">
-        <exec logoutput="true" command="phpcb --log '${project.basedir}/build/logs' --source '${project.basedir}/${source}/src' --output '${project.basedir}/build/code-browser'" escape="false" />
+    <!-- ============================================  -->
+    <!-- Target: PHPLoc (PHP Lines of Code)              -->
+    <!-- ============================================  -->
+    <target name="phploc" description="Generate phploc.csv">
+        <exec command="phploc --log-csv ${builddir}/logs/phploc.csv ${source} " />
     </target>
+
+    <!-- ============================================  -->
+    <!-- Target: PHPCB (PHP Code Browser)              -->
+    <!-- ============================================  -->
+    <target name="phpcb" description="Aggregate tool output with PHP_CodeBrowser">
+        <exec command="phpcb --log    ${builddir}/logs
+              --ignore build,library/Zend,tests,docs
+              --source ${source}
+              --output ${builddir}/code-browser" />
+    </target>
+
 </project>

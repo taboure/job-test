@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="job-test" default="ci" basedir="../../..">
+    <property name="source" value="{basedir}/src" />
+
+    <target name="ci"
+            description="Tâche principale d'intégration continue"
+            depends="clean,qa"
+    />
+
+    <target name="clean" description="Vide les répertoires d'artefacts">
+
+        <delete dir="${project.basedir}/build/api" />
+        <delete dir="${project.basedir}/build/code-browser" />
+        <delete dir="${project.basedir}/build/coverage" />
+        <delete dir="${project.basedir}/build/logs" />
+        <delete dir="${project.basedir}/build/pdepend" />
+
+        <mkdir dir="${project.basedir}/build/api" />
+        <mkdir dir="${project.basedir}/build/code-browser" />
+        <mkdir dir="${project.basedir}/build/coverage" />
+        <mkdir dir="${project.basedir}/build/logs" />
+        <mkdir dir="${project.basedir}/build/pdepend" />
+
+    </target>
+
+    <target name="qa" description="Lance les outils d'analyse">
+        <phingcall target="pdepend" />
+        <phingcall target="phpmd" />
+        <phingcall target="phpcpd" />
+        <phingcall target="phploc" />
+        <phingcall target="phpcs" />
+        <!--<phingcall target="phpdoc" />-->
+        <phingcall target="phpunit" />
+        <phingcall target="phpcb" />
+    </target>
+
+    <target name="premier-outil" description="...">
+        <!-- Ici, le gros du boulot pour le premier outil ;-) -->
+    </target>
+
+    <target name="second-outil" description="...">
+        <!-- Ici, le gros du boulot pour le second outil ;-) -->
+    </target>
+
+    <target name="troisime-outil" description="...">
+        <!-- Et là, le gros du boulot pour le dernier ;-) -->
+    </target>
+
+ <!--   <target name="pdepend">
+        <phpdepend file="${project.basedir}/logs/jdepend.xml">
+            <logger type="jdepend-xml" outfile="${project.basedir}/build/logs/jdepend.xml" />
+            <logger type="jdepend-chart" outfile="${project.basedir}/build/pdepend/dependencies.svg" />
+            <logger type="overview-pyramid" outfile="${project.basedir}/build/pdepend/overview-pyramid.svg" />
+        </phpdepend>
+    </target>-->
+
+    <target name="pdepend" description="Calculate dependencies of the code base">
+        <exec command="pdepend --jdepend-xml=${project.basedir}/build/logs/jdepend.xml
+                               --jdepend-chart=${project.basedir}/build/pdepend/dependencies.svg
+                               --overview-pyramid=${project.basedir}/build/pdepend/overview-pyramid.svg
+                               --suffix=php
+                               --ignore=library/Zend,tests
+                               ${source}"
+              escape="false" />
+    </target>
+    <!--remontée de statistiques susceptibles de mettre en évidence des portions de code-source de qualité médiocre-->
+    <target name="phpmd">
+        <phpmd file="${project.basedir}/${source}/src">
+            <formatter type="xml" outfile="${project.basedir}/build/phpmd.xml" />
+        </phpmd>
+    </target>
+    <!--pour la détection de portions de code copié-collé :-->
+    <target name="phpcpd">
+        <phpcpd file="${project.basedir}/${source}/src">
+            <formatter type="pmd" outfile="${project.basedir}/build/logs/pmd-cpd.xml"/>
+        </phpcpd>
+    </target>
+
+    <!--Enchainons ensuite avec la collecte de statistiques du type nombres de méthodes, nombres de classes, nombres de lignes de code, … avec l’outil phploc :-->
+    <target name="phploc">
+        <exec logoutput="true" dir="${project.basedir}" command="phploc --log-csv '${project.basedir}/build/logs/phploc.csv' '${project.basedir}/${source}/src'" escape="false" />
+    </target>
+
+    <!--Vérifions ensuite le respect des normes de codage, avec PHP_CodeSniffer :-->
+    <target name="phpcs">
+        <phpcodesniffer standard="Zend">
+            <fileset dir="${project.basedir}/${source}/scr">
+                <include name="**/*.php"/>
+            </fileset>
+            <formatter type="checkstyle" outfile="${project.basedir}/build/logs/checkstyle.xml"/>
+        </phpcodesniffer>
+    </target>
+
+    <target name="phpunit">
+        <exec logoutput="true" dir="${project.basedir}/${source}/tests" command="phpunit" escape="false" />
+    </target>
+
+    <target name="phpcb">
+        <exec logoutput="true" command="phpcb --log '${project.basedir}/build/logs' --source '${project.basedir}/${source}/src' --output '${project.basedir}/build/code-browser'" escape="false" />
+    </target>
+</project>
