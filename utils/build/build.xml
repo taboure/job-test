@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="job-test" default="ci" basedir="../../..">
-    <property name="source" value="src" />
+    <property name="source" value="srcs" />
 
     <target name="ci"
             description="Tâche principale d'intégration continue"
@@ -47,7 +47,7 @@
     </target>
 
     <target name="pdepend">
-        <phpdepend file="${project.basedir}/${source}/AppBundle/Controller">
+        <phpdepend file="${project.basedir}/${source}/srcs">
             <logger type="jdepend-xml" outfile="${project.basedir}/build/logs/jdepend.xml" />
             <logger type="jdepend-chart" outfile="${project.basedir}/build/pdepend/dependencies.svg" />
             <logger type="overview-pyramid" outfile="${project.basedir}/build/pdepend/overview-pyramid.svg" />
