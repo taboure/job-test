@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<project name="job-test" basedir="../../.." default="main">
+<project name="job-test" default="ci" basedir="../../..">
 
     <property name="builddir" value="job-test/utils/build" />
     <property name="source" value="job-test/src" />
@@ -14,7 +14,7 @@
     <!-- ============================================  -->
     <!-- (DEFAULT) Target: main                        -->
     <!-- ============================================  -->
-    <target name="main" description="Start analyzing our application">
+    <target name="ci" description="Start analyzing our application">
         <echo msg="Start Build" />
 
         <phingcall target="prepare" />
