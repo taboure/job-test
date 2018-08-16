@@ -55,9 +55,9 @@
     </target>-->
 
     <target name="pdepend" description="Calculate dependencies of the code base">
-        <exec command="pdepend --jdepend-xml=${project.basedir}/logs/jdepend.xml
-                               --jdepend-chart=${project.basedir}/pdepend/dependencies.svg
-                               --overview-pyramid=${project.basedir}/pdepend/overview-pyramid.svg
+        <exec command="pdepend --jdepend-xml=${project.basedir}/build/logs/jdepend.xml
+                               --jdepend-chart=${project.basedir}/build/pdepend/dependencies.svg
+                               --overview-pyramid=${project.basedir}/build/pdepend/overview-pyramid.svg
                                --suffix=php
                                --ignore=library/Zend,tests
                                ${source}"
